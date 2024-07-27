@@ -1,0 +1,360 @@
+---
+title: "Updating police mortality numbers"
+format: html
+editor: visual
+---
+
+```{r}
+library(tidyverse)
+library(gridExtra)
+library(seasonal)
+library(forecast)
+source("read_nat.R")
+options(mc.cores = parallel::detectCores())
+```
+
+
+# introduction
+
+lit review here on persistent racial ineq. how stable are risks over time? upward? downward? have they changed since 2016? since 2020?
+
+# methods
+
+-   time series on presence of trends on killings, on rates, on race-spec trends
+
+-   multiple decrement period life tables. 3-yr windows by sex, 5-yr by race/sex
+
+# results: time series
+
+Using X13-ARIMA-SEATS methods, ARIMA(0,1,1) is the best fit for the total death trend. Deaths follow a clear moving average trend. Not stationary and no clear seasonality. 
+
+This procedure An overview of the ARIMA model selection procedure is given below, as given in Monsell (2002, 2006). The
+procedure can be summarized in five stages:
+• default model estimation: a default model is estimated, initial outlier identification and regressor tests
+are performed, and residual diagnostics are generated;
+• identification of differencing orders: empirical unit root tests are performed to determine the orders
+of differencing needed for the model;
+• identification of ARMA model orders: an iterative procedure is applied to determine the order of
+ARMA parameters;
+• comparison of identified model with default model: the identified model is compared to the default
+model; and
+• final model checks: where the final model is checked for adequacy
+
+ADF says it's not stationary. 
+
+```{r}
+pol_ts_tot<-ts(mpv %>%
+  mutate(month = floor_date(date, "month")) %>%
+  filter(month!=(max(month)),
+         .imp ==1) %>%
+  group_by(month) %>%
+  summarize(n = n()) %>%
+    ungroup() %>% 
+    select(-month),
+  frequency = 12,
+  start = 2013)
+
+library(tseries)
+adf.test(diff(pol_ts_tot))
+
+m_tot<-seas(pol_ts_tot)
+
+summary(m_tot)
+```
+
+In this figure, we decompose the time series into race-specific death counts and estimated trends using ARIMA(0,1,1) for each group.
+
+```{r}
+# experiment with overploting imputed data x13
+pol_ts_wht<-mpv %>%
+  mutate(month = floor_date(date, "month")) %>%
+  filter(month!=(max(month))) %>%
+  filter(race_ethn == "white") %>%
+  group_by(month, .imp) %>%
+  summarize(n = n()) %>%
+  ungroup() %>% 
+  select(-month)
+
+pol_ts_blk<-mpv %>%
+  mutate(month = floor_date(date, "month")) %>%
+  filter(month!=(max(month))) %>%
+  filter(race_ethn == "black") %>%
+  group_by(month, .imp) %>%
+  summarize(n = n()) %>%
+  ungroup() %>% 
+  select(-month)
+
+pol_ts_lat<-mpv %>%
+  mutate(month = floor_date(date, "month")) %>%
+  filter(month!=(max(month))) %>%
+  filter(race_ethn == "hispanic") %>%
+  group_by(month, .imp) %>%
+  summarize(n = n()) %>%
+  ungroup() %>% 
+  select(-month)
+
+pol_ts_aian<-mpv %>%
+  mutate(month = floor_date(date, "month")) %>%
+  filter(month!=(max(month))) %>%
+  filter(race_ethn == "aian") %>%
+  group_by(month, .imp) %>%
+  summarize(n = n()) %>%
+  ungroup() %>% 
+  select(-month)
+
+pol_ts_api<-mpv %>%
+  mutate(month = floor_date(date, "month")) %>%
+  filter(month!=(max(month))) %>%
+  filter(race_ethn == "api") %>%
+  group_by(month, .imp) %>%
+  summarize(n = n()) %>%
+  ungroup() %>% 
+  select(-month)
+
+source("make_decomp_plot.R")
+
+p1<-make_decomp_plot(pol_ts_blk,
+                     "Black deaths")
+
+p2<-make_decomp_plot(pol_ts_blk,
+                     "Latinx deaths")
+
+p3<-make_decomp_plot(pol_ts_wht,
+                     "White deaths")
+
+p4<-make_decomp_plot(pol_ts_aian,
+                     "AIAN deaths")
+
+p5<-make_decomp_plot(pol_ts_api,
+                     "API deaths")
+
+p0<-list()
+
+p0[[1]]<-autoplot(pol_ts_tot) +
+    theme(plot.margin=unit(c(-0.2, 0.2, -0.2, 0.2), "cm")) +
+  labs(subtitle = "Total deaths",
+       x = "",
+       y = "Data") + 
+  scale_x_continuous(breaks = c(2014, 2018, 2022))
+p0[[2]]<-autoplot(trendcycle(seas(pol_ts_tot))) +
+    theme(plot.margin=unit(c(-0.2, 0.2, -0.2, 0.2), "cm")) +
+  labs(x = "",
+       y = "Estimated trend")+ 
+  scale_x_continuous(breaks = c(2014, 2018, 2022))
+
+grid.arrange(
+  p0[[1]], p0[[2]],
+  p1[[1]], p1[[2]],
+  p2[[1]], p2[[2]],
+  p3[[1]], p3[[2]],
+  p4[[1]], p4[[2]],
+  p5[[1]], p5[[2]],
+  ncol =6,
+  as.table = F)
+```
+
+There's a very clear increasing trend in the total deaths. From ~ 90 monthly in 2014 up to ~ 107 monthly in 2024. Trend for Latinx and Black is similar, declining between 2014 and late 2017, increase from 2018 to present. Trends are less clear for AIAN and API deaths. 
+
+# results: population-adjusted mortality risk
+
+33.8 million people in 2020 ID'd as multiracial per census
+
+The largest Multiracial combinations in 2020 were White and Some Other Race (19.3 million), White and American Indian and Alaska Native (4 million), White and Black or African American (3.1 million), White and Asian (2.7 million), and Black or African American and Some Other Race (1 million)
+
+evaluate change over time in risk using methods from pnas. use 3-yr windows for 2013 - 2023 with one year lead on seer pop. exclusion of 2023 as sensitivity check
+
+NVSS switched from bridged to single race 6 in 2020. we have 3 years overlapping. let's check the differences in pop and mort rates
+
+```{r}
+bridged<-m1 %>% 
+  filter(year>2017) %>% 
+  mutate(type = "bridged")
+single<-m3 %>% 
+  filter(year<2021) %>% 
+  mutate(type = "single")
+
+comp<-m1 %>% 
+  filter(year>2017) %>% 
+  rename(deaths_bridged = deaths,
+         pop_bridged = population) %>% 
+  left_join(m3 %>% 
+              filter(year<2021) %>% 
+              rename(deaths_single = deaths,
+                     pop_single = population))
+
+comp <- comp %>% 
+  mutate(q_bridged = deaths_bridged/pop_bridged*1e5,
+         q_single = deaths_single/pop_single * 1e5)
+
+ggplot(comp,
+       aes(x = q_bridged,
+           y = q_single)) + 
+  geom_point() + 
+  geom_abline(slope = 1, intercept = 0) + 
+  facet_wrap(~race_ethn) + 
+  labs(subtitle = "NVSS Single Race 6 vs bridged Race crude mortality 2018-2020")
+
+```
+
+this doesn't appear to make much of a difference in estimating age-specific crude mortality across racial/ethnic gorups. Some noise in AIAN estimates, but appears to be unbiased. look for more nvss details on their transition to single race. multi race gets dropped here
+
+MODEL FOR BETTER AGE SPEC
+
+```{r}
+library(brms)
+library(lme4)
+
+dat_mult <- dat %>%
+	nest(-.imp) %>%
+	.$data
+
+m0 <- brm_multiple(
+  pol_deaths ~ race_ethn*gender + 
+    (1 | age) +
+    (1 | year) + offset(I(log(population))),
+  data = dat_mult,
+  family = 'negbinomial',
+  control = list(adapt_delta = 0.999, max_treedepth = 15))
+
+m1 <- brm_multiple(
+  pol_deaths ~ race_ethn*gender + 
+    (race_ethn*gender | age) +
+    (1 | year) + offset(I(log(deaths))),
+  data = dat_mult,
+  family = 'negbinomial',
+  control = list(adapt_delta = 0.999, max_treedepth = 15),
+  cores = parallel::detectCores())
+
+
+```
+
+
+```{r}
+source("lifetable.R")
+source("make_multi_table.R")
+
+## 3 year sets for lifetables, 2 yr for first with 11 y
+##.13-14, 15-17, 18-20, 21-23
+
+lt14<-dat %>% 
+  filter(year < 2015) %>% 
+  group_by(.imp, age, gender, race_ethn) %>% 
+  summarize(pol_deaths = sum(pol_deaths),
+            deaths = sum(deaths),
+            population = sum(population)) %>% 
+  ungroup() %>% 
+  make_multi_table()%>% 
+  mutate(period = 2014)
+
+lt17<-dat %>% 
+  filter(year>2014, 
+         year<2018)%>% 
+  group_by(.imp, age, gender, race_ethn) %>% 
+  summarize(pol_deaths = sum(pol_deaths),
+            deaths = sum(deaths),
+            population = sum(population)) %>% 
+  ungroup() %>% 
+  make_multi_table() %>% 
+  mutate(period = 2017)
+
+lt20<-dat %>% 
+  filter(year<2021, 
+         year>2017)%>% 
+  group_by(.imp, age, gender, race_ethn) %>% 
+  summarize(pol_deaths = sum(pol_deaths),
+            deaths = sum(deaths),
+            population = sum(population)) %>% 
+  ungroup() %>% 
+  make_multi_table() %>% 
+  mutate(period = 2020)
+
+lt23<-dat %>% 
+  filter(year>2020)%>% 
+  group_by(.imp, age, gender, race_ethn) %>% 
+  summarize(pol_deaths = sum(pol_deaths),
+            deaths = sum(deaths),
+            population = sum(population)) %>% 
+  ungroup() %>% 
+  make_multi_table() %>% 
+  mutate(period = 2023)
+
+lt_full<-bind_rows(lt14, lt17, lt20, lt23)
+
+lt_c<-lt_full %>% 
+  filter(age==80) %>% 
+  group_by(race_ethn, gender, 
+           period) %>% 
+  summarize(c_mn = mean(c_i),
+            c_se = sd(c_i)/sqrt(max(lt_full$.imp)))
+
+# # plot male age spec q_i
+# ggplot(lt_full,
+#        aes(x = age, y = q_i * 1e5,
+#            group = .imp)) + 
+#   geom_line() + 
+#   facet_wrap(~race_ethn)    
+
+# plot male c_i
+ggplot(lt_c,
+       aes(x = period,
+           y = c_mn,
+           ymin = c_mn - 2*c_se,
+           ymax = c_mn + 2*c_se,
+           color = race_ethn,
+           fill = race_ethn)) + 
+  geom_point() + 
+  geom_line() + 
+  geom_ribbon(alpha = 0.5, color = NA) + 
+  labs(subtitle = "Lifetime risk by period, male") + 
+  scale_x_continuous(breaks = c(2014, 2017, 2020, 2023)) + 
+  facet_wrap(~gender, 
+             scales = "free") + 
+  labs(x = "Period",
+       fill = "Race/ethnicity",
+       color = "Race/ethnicity",
+       y = "Cumulative mortality rate, age 85")
+# male ci estimates - within CI from PNAS for each group
+
+```
+
+Cumulative mortality by age 85 shown. Trend is generally positive. Looks consistent with priors. Large increases for F. 
+
+Age curve, overplot periods
+```{r}
+lt_full_age<-lt_full %>% 
+  group_by(age, gender, race_ethn, period) %>% 
+  summarize(q_mn = mean(q_i * 1e5) ,
+            q_sd = sd(q_i * 1e5),
+            q_se = q_sd / sqrt(10))
+
+ggplot(lt_full_age %>% 
+         filter(gender == "Male"),
+       aes(x = age, 
+           color = factor(period),
+           fill = factor(period),
+           y = q_mn,
+           ymax = q_mn + 2*q_se,
+           ymin = ifelse(q_mn - 2*q_se < 0, 0, 
+                         q_mn - 2*q_se))) + 
+  geom_line() + 
+  geom_ribbon(alpha = 0.5, color = NA) + 
+  facet_wrap(~race_ethn, nrow = 1) + 
+  theme(legend.position = "bottom")
+```
+
+```{r}
+ggplot(lt_full_age %>% 
+         filter(gender == "Female"),
+       aes(x = age, 
+           color = factor(period),
+           fill = factor(period),
+           y = q_mn,
+           ymax = q_mn + 2*q_se,
+           ymin = ifelse(q_mn - 2*q_se < 0, 0, 
+                         q_mn - 2*q_se))) + 
+  geom_line() + 
+  geom_ribbon(alpha = 0.5, color = NA) + 
+  facet_wrap(~race_ethn, nrow = 1) + 
+  theme(legend.position = "bottom")
+```
+
