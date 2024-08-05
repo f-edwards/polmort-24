@@ -41,8 +41,6 @@ table(mpv$race)
 # use of force eda --------------------------------------------------------
 table(mpv$cause_of_death)
 
-
-
 # inclusion criteria ------------------------------------------------------
 # mpv includes all deaths where police action caused death
 # e.g. vehicles appear to require collision with police vehicle
@@ -86,7 +84,8 @@ mpv_imps<-mpv %>%
          gender = factor(gender))
 
 imps_temp <- mice(mpv_imps, 
-                  m = 10)
+                  m = 20,
+                  maxit = 20)
 
 mpv_imputed<-complete(imps_temp, 
                       action = "long")

@@ -3,10 +3,9 @@
 ## uses kf nax from demogR package
 
 make_life_table<-function(dat){
-  dat<-dat%>%
-    ungroup()
   ### compute crude death rate m
   dat<-dat%>%
+    ungroup() %>% 
     mutate(m = deaths / population)
   ### define n as period length for each age
   ### age is 0-1, 1-4, then 5 years
