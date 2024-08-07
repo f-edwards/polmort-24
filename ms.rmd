@@ -1,0 +1,184 @@
+---
+title: "Updating police mortality numbers"
+author: "Frank Edwards and Ryan Brown"
+output: bookdown::pdf_document2
+toc: false
+abstract: "Police killings in the US have increased in recent years. We find that the trends in total deaths has increased, as has the tend in the number of Black, Latine and White people killed by police. We find no clear evidence of decreases in population risk of being killed by police following reform efforts undertaken following mass protests against police violence in the summer of 2020. Demographic risks, adjusted for population and mortality dynamics, suggest that risks of being killed by police have remained both unequal and stable between 2013 and early 2023"
+---
+
+```{r setup, echo = F, message = F, warning = F}
+library(tidyverse)
+library(gridExtra)
+library(broom)
+library(patchwork)
+library(bsts)
+library(tidybayes)
+library(scales)
+library(tidybayes)
+
+source("read_nat.R")
+bsts_series<-readRDS("bsts_series.RDS")
+options(mc.cores = parallel::detectCores())
+theme_set(theme_bw())
+knitr::opts_chunk$set(echo = F, warning = F, message = F)
+```
+
+# Introduction
+
+On July 6, 2024, Deputy Sean Grayson of the Sangamon Illinois Sheriff's Office shot and killed Sonya Massey after she summoned law enforcement for assistance with a suspected intruder in her home. Her death follows one of the largest protest mobilizations in the history of the U.S.; hundreds of thousands protested the police killings of George Floyd, Breonna Taylor, and thousands more during the pandemic summer of 2020. In response to these protests, policymakers at the federal, state, and local levels embarked on a limited set of efforts to reform police practices with the intent of reducing fatalities, generally resulting in either limited change or increased resources to departments (CITES), in stark contrast to the common demand of abolitionist movement leaders to defund the police (CITES). At the same time, police officers around the country began a concerted effort to engage in widespread work slowdowns (CITES). 
+
+Acknowledging this set of significant shocks to US policing as an institution in recent years, we evaluate three research questions in this paper. 1) How have rates of fatalities caused by police use-of-force changed in the past decade? 2) Were there significant changes in time series dynamics following the mass protests of 2020? And 3) has the risk of being killed by police across marginalized groups shifted over time? To evaluate these questions, we combine informal data on fatalities caused by police use-of-force with vital statistics to estimate time series analyses and demographic analyses of patterns of the distribution of police killings. 
+We find that rates of police killings have increased for most groups between 2013 and 2024. During this period, the monthly number of people killed by police reached a peak in August of 2023, when officers killed 137 people. We find that the trend in the frequency of White, Black, and Latine people killed by police has increased significantly over this 11 year period. Further, we find no evidence for a decrease in rates of police use of force fatalities following reform efforts after the Minneapolis Police Department killed George Floyd. After adjusting for population and all-cause mortality dynanmics, we find that underlying risk of being killed by police use of force has remained clearly unequal and relatively stable over this period. 
+
+# Lit review (better title forthcoming)
+
+RISK LITERATURE
+
+FLURRY OF POST-MINNEAPOLIS 2020 CRIM
+
+# Analytic strategy
+
+We treat fatalities caused by police use-of-force as both a time series and a demographic process, and evaluate differences in levels of exposure to fatal police violence across groups and changes in rates and patterns of exposure over time. 
+
+## Data
+
+Data on people killed by police use of force are obtained from Mapping Police Violence (MPV). MPV aggregates data from existing efforts to document police use of force fatalities undertaken by the Washington Post (CITE) and Fatal Encounters, in addition to engaging in original data collection using news reports to generate data on fatalities. In general, this method relies on news reports, obituaries, and social media to describe the deceased and the incident leading to their death. Inclusion criteria for MPV include that the use of force by an officer (on or off-duty) must have been a direct cause of the focal fatality. Suicides and incidental deaths are excluded. 
+
+In the absence of official data on officer-involved deaths, this approach has been validated as providing a more complete count of deaths than vital statistics (FELDMAN ETC) and have provided the foundation for describing the scope and distribution of fatal police violence in the US (EDWARDS et al). Fatality counts derived from MPV (and other unofficial sources) are subject to a potential negative bias, as media reporting is a necessary condition for identification and inclusion. 
+
+We couple data on police use of force fatalities with population data from the National Insitutes of Health SEER program and data on all-cause mortality and population by year, race, age, and gender from the National Vital Statistics System (NVSS) (CITES). We estimate all populations and mortality counts using the race/ethnicity categories available in MPV, as Black, American Indian and Alaska Native, Asian / Pacific Islander, White (non-hispanic) and Latine (as white, hispanic). Note that NVSS changed its racial classification system from a five category bridged-race system to a six race classification system in 2020. Sensitivity analyses suggest this classification change had little impact on results (see appendix). 
+
+## Missing data imputation
+
+Because it is based on often incomplete information sourced from media reports, MPV has missing values on some focal variables. Decedent race/ethnicity is missing in 11.5 percent of observations in the focal period. Age is missing in 4 percent of cases, and gender is missing in 1.1 percent of cases. 
+
+To avoid discarding information on fatalities and estimate uncertainty driven by missing data, we assume that data are missing conditional on observed case characteristics and population feature of the state where a fatality occurred and compute multiple imputations using chained equations (CITE MICE). We join MPV data to data on state racial population compositions computed from SEER US population data. We estimate uncertainty around missing values with 20 imputed datasets. We incorporate error driven by missing data into all model results by separately estimating models over each imputation, then pooling posterior parameter estimates for inference. 
+
+We provide additional information on the patterns of missing data and impacts of imputation on focal results in the appendix. 
+
+## Time series analysis of police killings
+
+We evaluate change over time in the number of people killed by police using Bayesian structural time series models to evaluate the presence of trends, seasonality, and period effects. We construct monthly counts of deaths caused by police use of force between January 2013 and February 2024 using data compiled by Mapping Police Violence. We also construct race/ethnicity specific time series for American Indian and Alaska Native, Asian and Pacific Islander, Black, Latinx, and White deaths caused by police use-of-force.
+
+Our Bayesian structural time series models follows Scott and Varian by estimating a model that contains trend, monthly seasonal, and regression components (SCOTT AND VARIAN 2013). We first estimate univariate baseline models for trends and seasonality for race-specific and total death time series. For each time series, we estimate separate models for each of 20 imputed datasets, then pool posterior parameter estimates to obtain point estimates and credible intervals for each component of the model. All models are estimated with a death count outcome $d$ in period $t$ with $log(d_t + 1)$ to adjust for multiplicative processes and the presence of zeroes in the data. We decompose each series into local linear trend and seasonal components and visualize the results, along with posterior credible intervals. Note that time series decomposition using the X13 ARIMA-SEATS method on these data provide results that are substantively similar (see appendix for details). 
+
+We then evaluate whether and how each time series changes after Minneapolis police killed George Floyd. We add a regression component to the model with a binary period predictor equal to 1 if the date falls after May 2020 and zero otherwise. We estimate models across all imputed datasets, then pool posterior parameter distributions for inference. 
+
+## Demographic models for mortality risk and changes in mortality risk
+
+While time series analyses capture and decompose change over time in event frequency, they do not provide complete information on changes in the probability of police use-of-force deaths across groups over time. To evaluate whether observed time series changes are related to shifts in mortality risk at the population-level, we estimate a series of multiple decrement period life tables. 
+
+For each racial group, year, and gender, life tables require three age-specific inputs: population, all-cause deaths, and police use-of-force caused deaths. National Vital Statistics provide population and all-cause mortality counts, and MPV data provide the foundation for our inference on use-of-force risk. Because cause-specific fatality counts are often sparse at the age-gender-race-level, we use our imputed data on event counts to estimate generative Bayesian regression models to simulate event risk. This simulation-based approach allows us to smooth over often unstable or unrealistic sub-population rate estimates.
+
+We estimate negative binomial regression models of event counts, select a best performing specification using leave-one-out cross validation, then draw predicted values from model posterior predictive distributions. We simulate from a model that includes age-specific random intercepts for each combination of race/ethnicity and gender, and random intercepts for each year of the data. The model is offset by the natural logarithm of the group population. This approach flexibly models differences in risk over the life course, how those risks vary by race and gender, while also incorporating information on how risk has changed by race over time. We estimate models over each imputed set of MPV data, then pool draws from each of the 20 estimated posterior predictive distributions.
+
+We draw simulated mortality counts from model posterior predictive distributions, compute 80 percent intervals for each year by age, race, and gender, then estimate life tables using the upper and lower bounds and median of the posterior interval of simulated police use-of-force fatalities. Following this approach, we provide mortality estimates that incorporate uncertainty from missing data, as well as from instabilities driven by short-window observations of rare events for a large set of sub-populations. 
+
+# Results
+
+
+
+## Time series
+
+Figure \@ref(fig:bsts-tot) shows the time series of all recorded police use-of-force fatalities. The top panel displays the unstransformed time series of monthly fatalities for January 2013 - February 2024. The middle panel displays the estimated trend component of the series, and the bottom panel displays the estimated seasonal component of the series. Posterior credible intervals are included for trend and seasonal components, where color corresponds to quantile level of the interval, where dark blue indicates a 50% posterior inverval and light blue indicates a 90% posterior interval. 
+
+Between 2013 and early 2024, there were an average of `r round(bsts_series$total %>% filter(type == "data") %>% summarize(n = mean(n)),1)` people killed by police in the US per month. However, this rate of death was not constant over the decade. We find a steady increase in the average level of expected monthly deaths, beginning the period at a level of `r bsts_series$total %>% filter(type == "trend", month == "2013-01-01") %>% median_qi(n, width = 0.9) %>% select(n) %>% round(1)` [`r bsts_series$total %>% filter(type == "trend", month == "2013-01-01") %>% median_qi(n, width = 0.9) %>% select(n.lower) %>% round(1)`, `r bsts_series$total %>% filter(type == "trend", month == "2013-01-01") %>% median_qi(n, width = 0.9) %>% select(n.upper) %>% round(1)`] (90% posterior interval), and increasing to an average level of `r bsts_series$total %>% filter(type == "trend", month == max(month)) %>% median_qi(n, width = 0.9) %>% select(n) %>% round(1)` [`r bsts_series$total %>% filter(type == "trend", month == max(month)) %>% median_qi(n, width = 0.9) %>% select(n.lower) %>% round(1)`, `r bsts_series$total %>% filter(type == "trend", month == max(month)) %>% median_qi(n, width = 0.9) %>% select(n.upper) %>% round(1)`] in February 2024. The trend in fatalities increased relatively slowly between 2013 and 2019, then began a more rapid period of increase that persisted until the end of the series. 
+
+The lower panel shows that the data exhibit a weak seasonality. We estimate that deaths were more slightly more frequent in the spring and summer months compared to the winter and fall. The range of posterior estimates for seasonal components of the data is small, falling between -0.2 and 0.2 deaths. 
+
+```{r, bsts-tot}
+
+
+p0<-ggplot(bsts_series$total,
+            aes(x = as_date(month), y = n)) + 
+  stat_lineribbon(linewidth = 0.2, 
+                  .width = c(0.5, 0.8, 0.9)) + 
+  scale_fill_brewer() + 
+  facet_wrap(~type, 
+             ncol = 1,
+             scales = "free",
+             strip.position = "left") + 
+  labs(y = "Deaths",
+       x = "",
+       subtitle = "Total") +
+  scale_y_continuous(breaks = extended_breaks()) 
+
+
+pdat<-bind_rows(bsts_series$black,
+                bsts_series$hispanic,
+                bsts_series$white,
+                bsts_series$aian,
+                bsts_series$api) %>% 
+  mutate(month = as_date(month))
+
+
+# render stacked
+p0 
+```
+
+We display our estimates of the race/ethnicity specific time series of police use-of-force fatalities and model-based decompositions in Figure \@ref(fig:bsts-race). Note that the top panel displays the post-imputation unadjusted time series for each group, along with credible intervals illustrating the range of imputed counts. We find that police use of force accounted for `r pdat %>% filter(race_ethn=="aian") %>% summarize(n = mean(n)) %>% round(1)` deaths of American Indian and Alaska Native people per month. However, the trend indicates substantial change in this rate over the decade. Our results suggest that fatality rates rose from a minimum of `r pdat %>% filter(type == "trend", month == min(month), race_ethn == "aian") %>% median_qi(n, width = 0.9) %>% select(n) %>% round(1)`, [0, `r pdat %>% filter(type == "trend", month == min(month), race_ethn == "aian") %>% median_qi(n, width = 0.9) %>% select(n.upper) %>% round(1)`] to a period maximum of 1.4 [1.0, 2.2] fatalities per month, after adjusting for seasonal variation, in November 2017. Following this peak, rates declined to a rate of about 1 death per month [0.4, 1.8] where they remained for the remainder of the period. There is substantial remaining variation in AIAN fatality counts absorbed both by the seasonal component and stochastic error. 
+
+For Asian / Pacific Islander peoples, police-involved fatality rates remained relatively stable over this period. We estimate that police killed about 1.8 [1.4, 2.2] API people per month at the midpoint of our focal period. There is not clear evidence of a change in rates over the period. 
+
+For Black people, however, rates of police killing clearly fluctuated between 2013 and early 2024. In Jaunuary 2013, our estimate of the trend suggests that police could be expected to kill 25.8 [22.8, 29.7] Black people per month, after adjusting for weak seasonal variation. Fatality rates declined to a period minimum of 23.9 [22.2, 25.6] deaths per month in January 2017 before beginning a steep increase. By February 2024, we estimate an expected rate of 30.5 [26.9, 34.8] monthly people killed by police. 
+
+There was a large increase in the rate of police killings of Latine people between 2013 and early 2024. The trend follows a nearly linear rate of change from 14.7 [13.0, 16.5] fatalities per month to a maximum of 22.5 [20.1, 20.5] montly deaths at the end of the period in February 2024. This represents about a 50% increase in the frequency of Latine people killed by police monthly during this 11 year period. 
+
+There was also clear growth in the rate at which police killed white people between 2013 and early 2024. We estimate a relatively slow rate of growth in fatality frequency between 2013 and early 2018, and a shift to a steeper rate of change between 2018 and 2024. At the beginning of the period, our decomposition suggests an expected level of about deaths per month in 43.7 [40.2, 48.0] in January 2013, increasing to about 52.8 [48.5, 58.7] deaths per month in February 2024. 
+
+```{r bsts-race, fig.width = 8, fig.height = 6}
+
+```
+
+We also evaluate whether police fatality rates were attenuated following the mass anti-police violence protest wave that began in the summer of 2020. We add a post-May 2020 period indicator as a predictor in each structural time series model and evaluate whether this period exhibited differences in level or rates of change compared to the prior period (2013 - early 2020). We display the distribution of pooled posterior parameter estimates for the post May 2020 period in Figure \@ref(fig:post-beta). 
+
+We do not find evidence for a change in the rate of police killings following the death of George Floyd. The densities of posterior parameter estimates of a post-May 2020 period effect are tightly clustered around zero for total fatalities. Estimates are also clustered near zero for each racial and ethnic group. Densities show very little support for parameter estimates greater than zero or less than zero.
+
+These results suggest that there was no significant change in the time series of police fatalities for the June 2020 - February 2024 period when compared with the 2013 - May 2020 period. 
+
+```{r, post-beta, fig.cap = "Regression coefficients for period effect (post - May 2020) in Bayesian stuctural time series model of people killed by police with local linear trend and seasonal adjustment, January 2013 - February 2024. Solid line indicates cross-imputation posterior density of estimated Beta parameter, dashed line to indicate zero."}
+betas<-read_csv("./models/bsts_floyd_betas.csv")
+betas<-betas %>% 
+  mutate(race_ethn = case_when(
+    race_ethn == "aian" ~ "AIAN",
+    race_ethn == "api" ~ "Asian / PI",
+    race_ethn == "black" ~ "Black",
+    race_ethn == "hispanic" ~ "Latine",
+    race_ethn == "total" ~ "Total",
+    race_ethn == "white" ~ "White"
+    ),
+    race_ethn = fct_relevel(race_ethn,
+                            "Total")) 
+#discard burn in samples
+ggplot(betas,
+       aes(x = beta.draw)) + 
+  geom_density() + 
+  facet_wrap(~race_ethn,
+             strip.position = "left", ncol = 2) + 
+  geom_vline(xintercept = 0, lty = 2) + 
+  theme(axis.text.y = element_blank(),
+        axis.ticks.y = element_blank()) + 
+  labs(y = "Density of posterior parameter estimates",
+       x = "Parameter value")
+
+```
+
+# Results: population-adjusted mortality risk
+
+Below, we display estimates from annual period life tables estimated for each race/ethnicity and gender. These models estimate the risk of death caused by police use of force if mortality risk were held fixed at rates observed each year. We then simulate mortality rates over the life course by cause for a synthetic cohort. We compute life tables annually, based on model predictions from observed data, to evaluate whether and how risks of being killed by police have changed by group between 2013 and 2024. 
+
+In Figure \@ref(fig:cplot) we show estimates of the cumulative risk of being killed by police by age 80, assuming that risk levels remained fixed. This approach allows us to evaluate how shifting patterns in fatalities described in Figures \@ref(fig:bsts-tot) and \@ref(fig:bsts-race) relate to shifts in mortality probabilities, which adjust for population dynamics and all-cause mortality. While median expected cumulative mortality estimates have increased over time for all groups, our methods cannot definitively identify a difference in mortality risk over time. 
+
+Our results suggest that the probability of being killed by police has been relatively stable across groups between 2013 and 2024. Consistent with prior research, we find that Black men face a higher lifetime risk of being killed by police than any other group. We find that, at levels of risk observed in 2013, Black men faced a lifetime risk of being killed by police of about 91.9 [79.5, 106.0] deaths per 100,000 population. By 2023, our results suggest a median expected cumulative mortality of 104.0 [90.0, 120.0] deaths per 100,000 births. Among women, we find that Black women face highest mortality risk. At 2013 levels of risk, we estimate a lifetime mortality risk of 4.1 [2.9, 5.6] per 100,000. In 2023, we estimate this risk as 4.7 [3.4, 6.4]. 
+
+We estimate that the lifetime risk of death due to police use of force for Latino men was 53.9 [46.1, 62.9] in 2013. By 2023, this level of risk was 61.3 [52.5, 71.4]. Latina women faced 2013 lifetime levels of risk at 2.9 [2.0, 4.0] and 2023 levels of risk at 3.4 [4.6, 2.4] per 100,000 births. 
+
+For American Indian and Alaska Native peoples, we find a lifetime risk of being killed by police of 51.3 [41.4, 62.4] for men, and 2.9 [2.0, 4.0] for women in 2013. At 2023 levels of risk, we estimate cumulative mortality rates of 58.3 [47.0, 71.0] deaths per 100,000 births for men, and 3.3 [2.3, 4.5] deaths per 100,000 for women.  
+
+For Asian and Pacific Islander peoples, we find lifetime mortality rates of 16.4 [12.0, 21.9] per 100,000 for men and 1.1 [0.6, 2.1] for women in 2013. We estimate lifetime risks at 18.9 [13.9, 25.3] for API men and 1.3 [0.7, 2.4] per 100,000 for API women in 2023.  
+
+
+
+The probability of being killed by police peaks in young adulthood for all groups, with risks highest among Black men and Black women. In figure \@ref(fig:qplot) we display our estimated posterior expected probabilities of being killed by police for each year of the data by race/ethnicity, age, gender, and race/ethnicity. We find risks at their highest expected levels in 2023. We find that risks are generally highest between ages 25 and 30. We estimate that Black men faced odds of being killed by police of about 1 in 5200 [4613, 5929], while White men aged 25-30 faced odds of being killed by police of about 1 in 15000 [13007, 16370]. Women's age-specific risk is generally more than an order of magnitude lower than men's risk of being killed by police, but Black women consistently face levels of risk about twice as high as White women's risk over the life course. 
+
+Not sure about including Figure \@ref(fig:disp). I don't have variance on year in the models. Re-estimating with RE for triple interaction by year
