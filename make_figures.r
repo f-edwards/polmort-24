@@ -128,27 +128,6 @@ lt_full <- lt_full %>%
 # plot male c_i
 p1<-ggplot(lt_full %>% 
              filter(age == 80,
-                    gender == "Male"),
-           aes(x = year,
-               y = c_i.med,
-               ymin = c_i.lwr,
-               ymax = c_i.upr,
-               color = race_ethn)) + 
-  geom_pointrange(alpha = 0.7, position = position_dodge(width = 0.5)) + 
-  geom_line() + 
-  scale_x_continuous(breaks = breaks_pretty()) + 
-  labs(x = "",
-       fill = "Race/ethnicity",
-       color = "Race/ethnicity",
-       y = "Cumulative mortality per 100,000, age 80",
-       subtitle = "Male") + 
-  scale_color_brewer(palette = "Dark2") + 
-  theme(legend.position = "none")
-# male ci estimates - within CI from PNAS for each group
-# checking on time effects | race
-
-p2<-ggplot(lt_full %>% 
-             filter(age == 80,
                     gender == "Female"),
            aes(x = year,
                y = c_i.med,
@@ -161,10 +140,31 @@ p2<-ggplot(lt_full %>%
   labs(x = "",
        fill = "Race/ethnicity",
        color = "Race/ethnicity",
-       y = "",
-       subtitle = "Female") + 
-  scale_color_brewer(palette = "Dark2") +
-  theme(legend.position = "bottom")
+       y = "Lifetime risk",
+       subtitle = "1. Female") + 
+  scale_color_brewer(palette = "Dark2") + 
+  theme(legend.position = "right")
+# male ci estimates - within CI from PNAS for each group
+# checking on time effects | race
 
-p_out<-p1/p2
+p2<-ggplot(lt_full %>% 
+             filter(age == 80,
+                    gender == "Male"),
+           aes(x = year,
+               y = c_i.med,
+               ymin = c_i.lwr,
+               ymax = c_i.upr,
+               color = race_ethn)) + 
+  geom_pointrange(alpha = 0.7, position = position_dodge(width = 0.5)) + 
+  geom_line() + 
+  scale_x_continuous(breaks = breaks_pretty()) + 
+  labs(x = "",
+       fill = "Race/ethnicity",
+       color = "Race/ethnicity",
+       y = "",
+       subtitle = "2. Male") + 
+  scale_color_brewer(palette = "Dark2") +
+  theme(legend.position = "none")
+
+p_out<-p1/p2 + plot_layout(guides = 'collect')
 ggsave("./vis/fig2.pdf", p_out, units = "cm", width = 12, height = 12)
