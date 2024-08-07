@@ -46,7 +46,7 @@ p0<-ggplot(pdat %>%
   labs(y = "",
        x = "",
        subtitle = "1. Total deaths") +
-  theme(legend.position = "none") + 
+  theme(legend.position = "right") + 
   scale_y_continuous(breaks = extended_breaks()) 
 ## race spec TS
 p1 <- ggplot(pdat %>% 
@@ -60,7 +60,7 @@ p1 <- ggplot(pdat %>%
   ggh4x::facet_grid2(rows = vars(type), cols = vars(race_ethn),
                      scales = "free_y", independent = "y",
                      switch = "y") + 
-  theme(legend.position = "bottom") +
+  theme(legend.position = "none") +
   labs(x = "", y = "", subtitle = "2. Deaths by race/ethnicity",
        fill = "Interval level") + 
   scale_y_continuous(breaks = pretty_breaks(n=3)) + 
@@ -166,5 +166,5 @@ p2<-ggplot(lt_full %>%
   scale_color_brewer(palette = "Dark2") +
   theme(legend.position = "bottom")
 
-p_out<-p1+p2
-ggsave("./vis/fig2.pdf", p_out, units = "cm", width = 17.8, height = 12)
+p_out<-p1/p2
+ggsave("./vis/fig2.pdf", p_out, units = "cm", width = 12, height = 12)

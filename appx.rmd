@@ -468,7 +468,7 @@ p1<-ggplot(lt_full %>%
            group = year)) + 
   geom_line() + 
   facet_wrap(~race_ethn, ncol = 1, strip.position = "left") + 
-  theme(legend.position = "none") + 
+  theme(legend.position = "right") + 
   scale_color_continuous(breaks = pretty_breaks()) + 
   labs(x = "Age", y = "Probability per 100,000",
        subtitle = "Female")
