@@ -37,15 +37,16 @@ p0<-ggplot(pdat %>%
            aes(x = as_date(month), y = n)) + 
   stat_lineribbon(linewidth = 0.2, 
                   .width = c(0.5, 0.8, 0.9)) + 
+  geom_vline(xintercept = as_date("2020-05-01"), lty = 2) + 
   scale_fill_brewer() + 
   facet_wrap(~type, 
              ncol = 1,
              scales = "free",
              strip.position = "left") + 
-  labs(y = "Deaths",
+  labs(y = "",
        x = "",
        subtitle = "1. Total deaths") +
-  theme(legend.position = "none")
+  theme(legend.position = "none") + 
   scale_y_continuous(breaks = extended_breaks()) 
 ## race spec TS
 p1 <- ggplot(pdat %>% 
@@ -55,6 +56,7 @@ p1 <- ggplot(pdat %>%
   stat_lineribbon(linewidth = 0.2, 
                   .width = c(0.5, 0.8, 0.9)) + 
   scale_fill_brewer() + 
+  geom_vline(xintercept = as_date("2020-05-01"), lty = 2) + 
   ggh4x::facet_grid2(rows = vars(type), cols = vars(race_ethn),
                      scales = "free_y", independent = "y",
                      switch = "y") + 
@@ -164,5 +166,5 @@ p2<-ggplot(lt_full %>%
   scale_color_brewer(palette = "Dark2") +
   theme(legend.position = "bottom")
 
-p_out<-p1/p2
+p_out<-p1+p2
 ggsave("./vis/fig2.pdf", p_out, units = "cm", width = 17.8, height = 12)
