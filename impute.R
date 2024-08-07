@@ -1,5 +1,4 @@
 library(tidyverse)
-library(geofacet)
 
 set.seed(5)
 
@@ -38,6 +37,7 @@ pop_st_race_comp<-pop %>%
 
 ### race
 table(mpv$race)
+
 # use of force eda --------------------------------------------------------
 table(mpv$cause_of_death)
 

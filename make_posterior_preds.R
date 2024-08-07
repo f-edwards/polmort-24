@@ -2,6 +2,7 @@
 # generate posterior predictions
 # pool, compute tables over
 # draw credible intervals
+library(modelr)
 
 files<-list.files(path = "./models")
 files<-files[-(files=="bsts_floyd_betas.csv")]

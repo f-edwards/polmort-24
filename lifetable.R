@@ -30,11 +30,11 @@ make_life_table<-function(dat){
       ))
   ### compute pr(death) as q
   ## q = (n * m) / (1 + (n - nax) * m)
-  ## manually fix pr(Death) at 85+ to 1
+  ## manually fix pr(Death) at 80+ to 1
   dat<-dat%>%
     mutate(q = case_when(
-      age != 85 ~ (n * m) / (1 + (n - nax) * m),
-      age == 85 ~ 1
+      age != 80 ~ (n * m) / (1 + (n - nax) * m),
+      age == 80 ~ 1
     ))
   ### compute survival p as 1 - q
   dat<-dat %>% 
@@ -65,9 +65,16 @@ make_life_table<-function(dat){
   ## cohort deaths due to cause
   dat<-dat %>% 
     mutate(d_i = q_i*lx)
-  ## cumulative cause deaths
+  ## cumulative cause deaths, to proportion
   dat<-dat %>% 
     mutate(c_i = cumsum(d_i))
+  # se of survival
+  dat<-dat %>% 
+    mutate(
+      se_c = sqrt(cumsum(d_i/lx^2)),
+      c_i_lwr = c_i - 1.96 * se_c * 1e5,
+      c_i_upr = c_i + 1.96 * se_c * 1e5)
+  
   return(dat)
 }
 
