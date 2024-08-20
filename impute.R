@@ -58,6 +58,8 @@ imps_temp <- mice(mpv_imps,
                   m = 20,
                   maxit = 20)
 
+saveRDS(imps_temp, "./data/imps.RDS")
+
 mpv_imputed<-complete(imps_temp, 
                       action = "long")
 
