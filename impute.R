@@ -1,27 +1,28 @@
+
+# impute missing values for MPV -------------------------------------------
 library(tidyverse)
+library(mice)
 
 set.seed(5)
 
-mpv<-read_csv("./data/mpv-4-2-24.csv")
-
-### magnitudes of missing data on core demographics (age, gender, race, date)
+### read pre-processed data excluding out of domain cases
+# produced by QA.R
+mpv<-read_csv("./data/mpv_cleaned.csv")
+# format dates
 mpv<-mpv %>% 
   mutate(
     date = mdy(date),
     year = year(date),
-    month = month(date)) %>% 
-  select(name:cause_of_death, tract, latitude, longitude, date, year, month)
-
+    month = month(date)) 
+# read SEER state pop data for racial pop comp imputation predictors
 pop<-read_csv("./data/pop_st.csv")
 xwalk<-data.frame(stname = state.name, 
                   state = state.abb)
-
 pop<- pop %>% 
   left_join(xwalk) %>% 
   mutate(sex = ifelse(sex == 1,
                       "Male", 
                       "Female"))
-
 ### setup racial comp by state
 pop_st_race_comp<-pop %>% 
   group_by(year, state, race_ethn) %>% 
@@ -34,39 +35,7 @@ pop_st_race_comp<-pop %>%
   mutate(across(aian:white, ~./pop * 1e2)) %>% 
   mutate(year = year + 2) %>%   # for imputation match
   select(-white)
-
-### race
-table(mpv$race)
-
-# use of force eda --------------------------------------------------------
-table(mpv$cause_of_death)
-
-# inclusion criteria ------------------------------------------------------
-# mpv includes all deaths where police action caused death
-# e.g. vehicles appear to require collision with police vehicle
-# suicides appear to require police use of force
-# audit these carefully
-# suicide -----------------------------------------------------------------
-# # suicide
-# table(str_detect(mpv$circumstances, "suici"))
-# 
-# ### evaluate these more carefully later
-# ### for now just drop
-# 
-# suic<-mpv %>% 
-#   filter(str_detect(circumstances, "suici"))
-# 
-# mpv<-mpv %>% 
-#   filter(!(str_detect(circumstances, "suici")))
-
-# vehicle -----------------------------------------------------------------
-# v<-mpv %>% 
-#   filter(cause_of_death=="Vehicle") %>% 
-#   select(circumstances)
-
-### try imputations
-library(mice)
-
+# convert implicit missings
 mpv<-mpv %>% 
   mutate(race = ifelse(race=="Unknown race", 
                        NA, 
@@ -75,14 +44,16 @@ mpv<-mpv %>%
                          NA,
                          gender)) 
 
-
+# join
 mpv_imps<-mpv %>% 
   select(date, year, age, gender, race, state) %>% 
   left_join(pop_st_race_comp %>% 
               select(-pop)) %>% 
   mutate(race = factor(race),
-         gender = factor(gender))
+         gender = factor(gender),
+         year = factor(year))
 
+# impute ------------------------------------------------------------------
 imps_temp <- mice(mpv_imps, 
                   m = 20,
                   maxit = 20)
