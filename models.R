@@ -20,11 +20,12 @@ sim_model<-brm(pol_deaths ~ 1 +
 saveRDS(sim_model, "./models/sim_model.RDS")
 
 m_out<-list()
-for(i in 12:max(dat$.imp)){
+for(i in 2:max(dat$.imp)){
   m_temp<-update(sim_model,
                  newdata = dat %>%
                    filter(.imp == i))
   m_out[[i]]<-m_temp
   filename<-paste("./models/sim_model", i, ".RDS", sep = "")
   saveRDS(m_temp, file = filename)
+  gc()
 }

@@ -3,11 +3,14 @@
 # pool, compute tables over
 # draw credible intervals
 library(modelr)
+library(tidybayes)
+library(brms)
 
 files<-list.files(path = "./models")
-files<-files[-(files=="bsts_floyd_betas.csv")]
-files<-files[-(files=="sim_model.RDS")]
+files<-files[grep("sim_", files)]
+
 files<-paste("./models/", files, sep = "")
+
 m_in<-lapply(files, readRDS)
 # prediction over 100million pop
 pred_dat<- dat %>% 

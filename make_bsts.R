@@ -2,6 +2,8 @@
 # sourced from ms.qmd
 # working on 7/29/24
 # convert mpv to subseries ------------------------------------------------
+library(bsts)
+
 pol_ts_tot<-mpv %>%
   mutate(month = floor_date(date, "month")) %>%
   filter(month!=(max(month)),
@@ -11,7 +13,7 @@ pol_ts_tot<-mpv %>%
   ungroup() 
 
 race<-unique(mpv$race_ethn)
-dates<-unique(pol_ts_race$month)
+dates<-unique(pol_ts_tot$month)
 
 pol_ts_race<-mpv %>%
   mutate(month = floor_date(date, "month")) %>%
