@@ -5,6 +5,7 @@
 library(modelr)
 library(tidybayes)
 library(brms)
+source("read_nat.R")
 
 files<-list.files(path = "./models")
 files<-files[grep("sim_", files)]
