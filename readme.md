@@ -8,6 +8,7 @@ make_all.R is the primary make script for the file. After uncommenting lines 3-8
 - make_bsts.R estimates and outputs Bayesian structural time series models over imputed data
 - make_causalEst.R estimates and outputs BSTS models with regression predictors
 - make_posterior_preds.R processes the output of models.R and outputs posterior predictions
+- make_table scripts contain functions to produce multiple decrement life tables
 - read_nat.R reads and pre-processes all study data
 - make_figures.r makes study visuals
 - appx.r makes appendix visuals
