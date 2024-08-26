@@ -34,31 +34,6 @@ mpv_yr<-mpv_yr %>%
   tidyr::complete(.imp, year, age, gender, race_ethn, 
                   fill = list(n = 0))
 
-# # read SEER ---------------------------------------------------------------
-# pop<-read_csv("./data/pop_st.csv")
-# xwalk<-data.frame(stname = state.name, 
-#                   state = state.abb)
-# pop_st<- pop %>% 
-#   left_join(xwalk) %>% 
-#   mutate(gender = ifelse(sex == 1,
-#                          "Male", 
-#                          "Female"))%>% 
-#   mutate(age = as.numeric(age)) %>% 
-#   mutate(
-#     age = case_when(
-#       age == 0 ~ 0,
-#       age < 5 ~ 1,
-#       age>85 ~ 85,
-#       T ~ plyr::round_any(age, 5)
-#     )) %>% 
-#   group_by(age, gender, year, race_ethn) %>% 
-#   summarize(pop = sum(pop)) %>% 
-#   ungroup() 
-# 
-# mpv_pop<-mpv_yr %>% 
-#   left_join(pop_st %>% 
-#               mutate(year = year + 1))
-
 # read nvss ---------------------------------------------------------------
 # 00-20 race
 # race is hispanic and non-hispanic except for white

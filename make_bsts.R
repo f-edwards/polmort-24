@@ -111,6 +111,7 @@ bsts_tot <- bsts(logy, state.specification = ss,
 pred <- predict(bsts_tot, horizon = 12, burn = 100)
 plot(pred)
 
+saveRDS(bsts_tot, "bsts_tot.RDS")
 
 burn <- SuggestBurn(0.1, bsts_tot)
 trend<-bsts_tot$state.contributions[-(1:burn),"trend",] %>% 
