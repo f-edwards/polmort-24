@@ -37,7 +37,6 @@ p0<-ggplot(pdat %>%
            aes(x = as_date(month), y = n)) + 
   stat_lineribbon(linewidth = 0.2, 
                   .width = c(0.5, 0.8, 0.9)) + 
-  geom_vline(xintercept = as_date("2020-05-01"), lty = 2) + 
   scale_fill_brewer() + 
   facet_wrap(~type, 
              ncol = 1,
@@ -56,7 +55,6 @@ p1 <- ggplot(pdat %>%
   stat_lineribbon(linewidth = 0.2, 
                   .width = c(0.5, 0.8, 0.9)) + 
   scale_fill_brewer() + 
-  geom_vline(xintercept = as_date("2020-05-01"), lty = 2) + 
   ggh4x::facet_grid2(rows = vars(type), cols = vars(race_ethn),
                      scales = "free_y", independent = "y",
                      switch = "y") + 
@@ -67,8 +65,13 @@ p1 <- ggplot(pdat %>%
   scale_x_date(breaks = pretty_breaks(n = 4))
 
 p_out<-p0/p1
-ggsave("./vis/fig1.pdf", p_out, units = "cm", width = 17.8, height = 12)
+ggsave("./vis/fig1.png", p_out, width = 12, height = 8)
 
+p_slides1<-p0
+ggsave("./vis/slides_fig1.png", p_slides1, width = 12, height = 8)
+
+p_slides2<-p1
+ggsave("./vis/slides_fig2.png", p_slides2, width = 12, height = 8)
 
 # Fig 2- lifetable cumulative risk
 
