@@ -1,11 +1,12 @@
-# run all analyses for polmort24
-#not run
-#source("QA.R")
-#source("impute.R")
-#source("models.R")
+library(tidyverse)
+
+# run all analyses for polmort26
+# source("QA.R")
+source("impute.R")
+source("models.R")
 # source("make_bsts.R")
 # source("make_causalEst.r")
 # source("make_posterior_preds.R")
 
-source("read_nat.R")
-source("make_figures.r")
+# source("read_nat.R")
+# source("make_figures.r")
